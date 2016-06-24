@@ -611,6 +611,8 @@ cdef class LibCephFS(object):
         self.require_state("mounted")
         path = cstr(path, 'path')
 
+        if not isinstance(flags, str):
+            raise TypeError('flags must be a string')
         if not isinstance(mode, int):
             raise TypeError('mode must be an int')
         if isinstance(flags, basestring):
