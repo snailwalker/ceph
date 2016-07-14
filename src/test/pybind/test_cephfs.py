@@ -58,7 +58,7 @@ def test_syncfs():
 
 @with_setup(setup_test)
 def test_fsync():
-    fd = cephfs.open(b'file-1', u'w', 0o755)
+    fd = cephfs.open(b'file-1', 'w', 0o755)
     cephfs.write(fd, b"asdf", 0)
     stat = cephfs.fsync(fd, 0)
     cephfs.write(fd, b"qwer", 0)
