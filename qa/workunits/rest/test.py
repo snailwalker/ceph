@@ -56,7 +56,9 @@ def expect_nofail(url, method, respcode, contenttype, extra_hdrs=None,
         if r_contenttype == 'application/json':
             try:
                 # older requests.py doesn't create r.myjson; create it myself
-                r.myjson = json.loads(r.content)
+                content = r.content
+                content = content.decode('utf-8') if isinstance(content, bytes) else content
+                r.myjson = json.loads(content)
                 assert(r.myjson is not None)
             except Exception as e:
                 return 'Invalid JSON returned: "{0}"'.format(str(e)), r
