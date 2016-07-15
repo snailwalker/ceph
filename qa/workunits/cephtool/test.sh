@@ -33,7 +33,7 @@ function expect_false()
 }
 
 
-TEMP_DIR=$(mktemp -d cephtool.XXX)
+TEMP_DIR=$(mktemp -t -d cephtool.XXX)
 trap "rm -fr $TEMP_DIR" 0
 
 TMPFILE=$(mktemp $TEMP_DIR/test_invalid.XXX)
@@ -149,7 +149,7 @@ function ceph_watch_start()
 	whatch_opt=--watch-$1
     fi
 
-    CEPH_WATCH_FILE=${TMPDIR}/CEPH_WATCH_$$
+    CEPH_WATCH_FILE=${TEMP_DIR}/CEPH_WATCH_$$
     ceph $whatch_opt > $CEPH_WATCH_FILE &
     CEPH_WATCH_PID=$!
 
@@ -1760,7 +1760,7 @@ function test_mon_crushmap_validation()
   local map=$TEMP_DIR/map
   ceph osd getcrushmap -o $map
 
-  local crushtool_path="${TMPDIR}/crushtool"
+  local crushtool_path="${TEMP_DIR}/crushtool"
   touch "${crushtool_path}"
   chmod +x "${crushtool_path}"
   local crushtool_path_old=`ceph-conf --show-config-value crushtool`
