@@ -22,7 +22,8 @@ endif
 	dh $@ --buildsystem=cmake --with javahelper,python2,systemd --parallel
 
 override_dh_auto_configure:
-	dh_auto_configure --buildsystem=cmake -- $(extraopts) $(CEPH_EXTRA_CMAKE_ARGS)
+	# dh_auto_configure sets -DCMAKE_BUILD_TYPE=None; override that
+	dh_auto_configure --buildsystem=cmake -- $(extraopts) $(CEPH_EXTRA_CMAKE_ARGS) -DCMAKE_BUILD_TYPE=
 
 override_dh_auto_build:
 	dh_auto_build --buildsystem=cmake
