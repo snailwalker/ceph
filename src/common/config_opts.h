@@ -155,6 +155,7 @@ SUBSYS(bdev, 1, 3)
 SUBSYS(kstore, 1, 5)
 SUBSYS(rocksdb, 4, 5)
 SUBSYS(leveldb, 4, 5)
+SUBSYS(memdb, 4, 5)
 SUBSYS(kinetic, 1, 5)
 SUBSYS(fuse, 1, 5)
 
@@ -429,6 +430,7 @@ OPTION(objecter_inflight_op_bytes, OPT_U64, 1024*1024*100) // max in-flight data
 OPTION(objecter_inflight_ops, OPT_U64, 1024)               // max in-flight ios
 OPTION(objecter_completion_locks_per_session, OPT_U64, 32) // num of completion locks per each session, for serializing same object responses
 OPTION(objecter_inject_no_watch_ping, OPT_BOOL, false)   // suppress watch pings
+OPTION(objecter_retry_writes_after_first_reply, OPT_BOOL, false)   // ignore the first reply for each write, and resend the osd op instead
 
 // Max number of deletes at once in a single Filer::purge call
 OPTION(filer_max_purge_ops, OPT_U32, 10)
@@ -776,6 +778,10 @@ OPTION(osd_deep_scrub_update_digest_min_age, OPT_INT, 2*60*60)   // objects must
 OPTION(osd_scan_list_ping_tp_interval, OPT_U64, 100)
 OPTION(osd_class_dir, OPT_STR, CEPH_LIBDIR "/rados-classes") // where rados plugins are stored
 OPTION(osd_open_classes_on_start, OPT_BOOL, true)
+OPTION(osd_class_load_list, OPT_STR, "cephfs hello journal lock log numops "
+    "rbd refcount replica_log rgw statelog timeindex user version") // list of object classes allowed to be loaded (allow all: *)
+OPTION(osd_class_default_list, OPT_STR, "cephfs hello journal lock log numops "
+    "rbd refcount replica_log rgw statelog timeindex user version") // list of object classes with default execute perm (allow all: *)
 OPTION(osd_check_for_log_corruption, OPT_BOOL, false)
 OPTION(osd_use_stale_snap, OPT_BOOL, false)
 OPTION(osd_rollback_to_cluster_snap, OPT_STR, "")

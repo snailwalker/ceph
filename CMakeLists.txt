@@ -135,21 +135,12 @@ CHECK_CXX_SOURCE_COMPILES("
   #include <string.h>
   int main() { char x = *strerror_r(0, &x, sizeof(x)); return 0; }
   " STRERROR_R_CHAR_P)
-CHECK_CXX_SOURCE_COMPILES("
-  #include <sys/stat.h>
-  #include <stdio.h>
-  int main() { struct stat foo = {}; foo.st_mtim.tv_nsec = 0;
-  return 0; } 
-  " HAVE_STAT_ST_MTIM_TV_NSEC)
-CHECK_CXX_SOURCE_COMPILES("
-  #include <sys/stat.h>
-  #include <stdio.h>
-  int main() { struct stat foo = {}; foo.st_mtimespec.tv_nsec = 0;
-  return 0; } 
-  " HAVE_STAT_ST_MTIMESPEC_TV_NSEC)
-CHECK_CXX_SOURCE_COMPILES("
-  int main() { float f = 12.3; int n = static_cast<int>(f); return 0; }
-  " HAVE_STATIC_CAST)
+
+include(CheckStructHasMember)
+CHECK_STRUCT_HAS_MEMBER("struct stat" st_mtim.tv_nsec sys/stat.h
+  HAVE_STAT_ST_MTIM_TV_NSEC LANGUAGE C)
+CHECK_STRUCT_HAS_MEMBER("struct stat" st_mtimespec.tv_nsec sys/stat.h
+  HAVE_STAT_ST_MTIMESPEC_TV_NSEC LANGUAGE C)
 
 set(CEPH_MAN_DIR "share/man" CACHE STRING "Install location for man pages (relative to prefix).")
 
@@ -391,9 +382,13 @@ set(OperatingSystem "Mac OS X")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 # enables testing and creates Make check command
+add_custom_target(tests
+  COMMENT "Building tests")
 enable_testing()
 set(CMAKE_CTEST_COMMAND ctest)
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+add_custom_target(check
+  COMMAND ${CMAKE_CTEST_COMMAND}
+  DEPENDS tests)
 
 add_subdirectory(src)
 

@@ -1,7 +1,7 @@
 include(AddCephTest)
 
 set(UNITTEST_LIBS gmock_main gmock gtest ${PTHREAD_LIBS} ${CMAKE_DL_LIBS})
-set(UNITTEST_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/src/gmock/include -I${CMAKE_BINARY_DIR}/src/gmock/include -I${CMAKE_SOURCE_DIR}/src/gmock/gtest/include -I${CMAKE_BINARY_DIR}/src/gmock/gtest/include -fno-strict-aliasing")
+set(UNITTEST_CXX_FLAGS "-I${CMAKE_SOURCE_DIR}/src/googletest/googlemock/include -I${CMAKE_BINARY_DIR}/src/googletest/googlemock/include -I${CMAKE_SOURCE_DIR}/src/googletest/googletest/include -I${CMAKE_BINARY_DIR}/src/googletest/googletest/include -fno-strict-aliasing")
 
 add_subdirectory(bench)
 add_subdirectory(cls_hello)
@@ -357,7 +357,7 @@ add_executable(ceph_perf_local
   perf_local.cc
   perf_helper.cc)
 #INTEL_SSE & INTEL_SSE2 flags
-set(PERF_LOCAL_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2") 
+set(PERF_LOCAL_FLAGS "-msse -msse2")
 set_target_properties(ceph_perf_local PROPERTIES COMPILE_FLAGS
   ${PERF_LOCAL_FLAGS})
 target_link_libraries(ceph_perf_local os global ${UNITTEST_LIBS})
@@ -478,7 +478,7 @@ target_link_libraries(ceph_test_get_blkdev_size
 #make check starts here
 
 #following dependencies are run inside make check unit tests
-add_dependencies(check 
+add_dependencies(tests
   ceph-mon
   ceph
   ceph-authtool
@@ -521,10 +521,7 @@ add_ceph_test(test_pidfile.sh ${CMAKE_CURRENT_SOURCE_DIR}/test_pidfile.sh)
 add_ceph_test(unittest_bufferlist.sh ${CMAKE_SOURCE_DIR}/src/unittest_bufferlist.sh)
 
 add_test(NAME run-tox-ceph-disk COMMAND bash ${CMAKE_SOURCE_DIR}/src/ceph-disk/run-tox.sh)
-add_dependencies(check run-tox-ceph-disk)
-
-add_test(NAME run-tox-ceph-detect-init COMMAND bash ${CMAKE_SOURCE_DIR}/src/ceph-detect-init/run-tox.sh WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src)
-add_dependencies(check run-tox-ceph-detect-init)
+add_test(NAME run-tox-ceph-detect-init COMMAND bash ${CMAKE_SOURCE_DIR}/src/ceph-detect-init/run-tox.sh)
 
 set(CEPH_DISK_VIRTUALENV ${CEPH_BUILD_VIRTUALENV}/ceph-disk-virtualenv)
 set(CEPH_DETECT_INIT_VIRTUALENV ${CEPH_BUILD_VIRTUALENV}/ceph-detect-init-virtualenv)

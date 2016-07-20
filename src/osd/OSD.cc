@@ -1932,14 +1932,14 @@ class TestOpsSocketHook : public AdminSocketHook {
 public:
   TestOpsSocketHook(OSDService *s, ObjectStore *st) : service(s), store(st) {}
   bool call(std::string command, cmdmap_t& cmdmap, std::string format,
-	    bufferlist& out) {
+	    bufferlist& out) override {
     stringstream ss;
     test_ops(service, store, command, cmdmap, ss);
     out.append(ss);
     return true;
   }
-  void test_ops(OSDService *service, ObjectStore *store, std::string command,
-     cmdmap_t& cmdmap, ostream &ss);
+  void test_ops(OSDService *service, ObjectStore *store,
+		const std::string &command, cmdmap_t& cmdmap, ostream &ss);
 
 };
 
@@ -4426,7 +4426,7 @@ void OSD::check_ops_in_flight()
 //
 //   set_recovery_delay [utime]
 void TestOpsSocketHook::test_ops(OSDService *service, ObjectStore *store,
-     std::string command, cmdmap_t& cmdmap, ostream &ss)
+     const std::string &command, cmdmap_t& cmdmap, ostream &ss)
 {
   //Test support
   //Support changing the omap on a single osd by using the Admin Socket to
@@ -6324,6 +6324,20 @@ void OSD::_dispatch(Message *m)
 
 }
 
+void OSD::handle_pg_scrub(MOSDScrub *m, PG *pg)
+{
+  pg->lock();
+  if (pg->is_primary()) {
+    pg->unreg_next_scrub();
+    pg->scrubber.must_scrub = true;
+    pg->scrubber.must_deep_scrub = m->deep || m->repair;
+    pg->scrubber.must_repair = m->repair;
+    pg->reg_next_scrub();
+    dout(10) << "marking " << *pg << " for scrub" << dendl;
+  }
+  pg->unlock();
+}
+
 void OSD::handle_scrub(MOSDScrub *m)
 {
   dout(10) << "handle_scrub " << *m << dendl;
@@ -6339,38 +6353,16 @@ void OSD::handle_scrub(MOSDScrub *m)
   if (m->scrub_pgs.empty()) {
     for (ceph::unordered_map<spg_t, PG*>::iterator p = pg_map.begin();
 	 p != pg_map.end();
-	 ++p) {
-      PG *pg = p->second;
-      pg->lock();
-      if (pg->is_primary()) {
-	pg->unreg_next_scrub();
-	pg->scrubber.must_scrub = true;
-	pg->scrubber.must_deep_scrub = m->deep || m->repair;
-	pg->scrubber.must_repair = m->repair;
-	pg->reg_next_scrub();
-	dout(10) << "marking " << *pg << " for scrub" << dendl;
-      }
-      pg->unlock();
-    }
+	 ++p)
+      handle_pg_scrub(m, p->second);
   } else {
     for (vector<pg_t>::iterator p = m->scrub_pgs.begin();
 	 p != m->scrub_pgs.end();
 	 ++p) {
       spg_t pcand;
       if (osdmap->get_primary_shard(*p, &pcand) &&
-	  pg_map.count(pcand)) {
-	PG *pg = pg_map[pcand];
-	pg->lock();
-	if (pg->is_primary()) {
-	  pg->unreg_next_scrub();
-	  pg->scrubber.must_scrub = true;
-	  pg->scrubber.must_deep_scrub = m->deep || m->repair;
-	  pg->scrubber.must_repair = m->repair;
-	  pg->reg_next_scrub();
-	  dout(10) << "marking " << *pg << " for scrub" << dendl;
-	}
-	pg->unlock();
-      }
+	  pg_map.count(pcand))
+	handle_pg_scrub(m, pg_map[pcand]);
     }
   }
 
@@ -9210,7 +9202,7 @@ int OSD::init_op_flags(OpRequestRef& op)
 	  derr << "class " << cname << " open got " << cpp_strerror(r) << dendl;
 	  if (r == -ENOENT)
 	    r = -EOPNOTSUPP;
-	  else
+	  else if (r != -EPERM) // propgate permission errors
 	    r = -EIO;
 	  return r;
 	}
@@ -9237,6 +9229,7 @@ int OSD::init_op_flags(OpRequestRef& op)
 	  op->set_class_write();
         if (is_promote)
           op->set_promote();
+        op->add_class(cname, is_read, is_write, cls->whitelisted);
 	break;
       }
 

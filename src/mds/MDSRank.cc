@@ -226,8 +226,6 @@ void MDSRankDispatcher::shutdown()
   // threads block on IOs that require finisher to complete.
   mdlog->shutdown();
 
-  finisher->stop(); // no flushing
-
   // shut down cache
   mdcache->shutdown();
 
@@ -240,11 +238,15 @@ void MDSRankDispatcher::shutdown()
 
   progress_thread.shutdown();
 
-  // shut down messenger
-  // release mds_lock first because messenger thread might call 
-  // MDSDaemon::ms_handle_reset which will try to hold mds_lock
+  // release mds_lock for finisher/messenger threads (e.g.
+  // MDSDaemon::ms_handle_reset called from Messenger).
   mds_lock.Unlock();
+
+  finisher->stop(); // no flushing
+
+  // shut down messenger
   messenger->shutdown();
+
   mds_lock.Lock();
 
   // Workaround unclean shutdown: HeartbeatMap will assert if
@@ -1237,6 +1239,7 @@ void MDSRank::clientreplay_start()
 {
   dout(1) << "clientreplay_start" << dendl;
   finish_contexts(g_ceph_context, waiting_for_replay);  // kick waiters
+  mdcache->start_files_to_recover();
   queue_one_replay();
 }
 
@@ -1270,6 +1273,7 @@ void MDSRank::active_start()
   mdcache->clean_open_file_lists();
   mdcache->export_remaining_imported_caps();
   finish_contexts(g_ceph_context, waiting_for_replay);  // kick waiters
+  mdcache->start_files_to_recover();
 
   mdcache->reissue_all_caps();
 

@@ -2,6 +2,7 @@
 from nose.tools import assert_raises, assert_equal, with_setup
 import cephfs as libcephfs
 import fcntl
+import os
 
 cephfs = None
 
@@ -38,6 +39,13 @@ def test_conf_get():
 @with_setup(setup_test)
 def test_version():
     cephfs.version()
+
+@with_setup(setup_test)
+def test_fstat():
+    fd = cephfs.open(b'file-1', 'w', 0o755)
+    stat = cephfs.fstat(fd)
+    assert(len(stat) == 13)
+    cephfs.close(fd)
 
 @with_setup(setup_test)
 def test_statfs():
@@ -131,6 +139,10 @@ def test_open():
     assert_equal(cephfs.read(fd, 0, 4), b"")
     cephfs.write(fd, b"zxcv", 4)
     assert_equal(cephfs.read(fd, 4, 8), b"zxcv")
+    cephfs.close(fd)
+    fd = cephfs.open(b'file-1', os.O_RDWR, 0o755)
+    cephfs.write(fd, b"asdf", 0)
+    assert_equal(cephfs.read(fd, 0, 4), b"asdf")
     cephfs.close(fd)
     assert_raises(libcephfs.OperationNotSupported, cephfs.open, b'file-1', 'a')
     cephfs.unlink(b'file-1')
