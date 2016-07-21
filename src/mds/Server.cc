@@ -5637,7 +5637,7 @@ void Server::_unlink_local(MDRequestRef& mdr, CDentry *dn, CDentry *straydn)
     mdcache->project_subtree_rename(in, dn->get_dir(), straydn->get_dir());
   }
 
-  journal_and_reply(mdr, 0, dn, le, new C_MDS_unlink_local_finish(mds, mdr, dn, straydn));
+  journal_and_reply(mdr, in, dn, le, new C_MDS_unlink_local_finish(mds, mdr, dn, straydn));
 }
 
 void Server::_unlink_local_finish(MDRequestRef& mdr,
